@@ -3,9 +3,11 @@ package game
 import "github.com/Sparhawk96/bank-ais/table"
 
 type results struct {
-	players     map[string]*playerNode
-	firstPlayer *playerNode
-	largestName int
+	players            map[string]*playerNode
+	firstPlayer        *playerNode
+	largestName        int
+	humanPlayers       int
+	bankedHumanPlayers int
 }
 
 type playerNode struct {
@@ -31,6 +33,10 @@ func (r *results) addPlayer(player Player) {
 		pn := &playerNode{Player: player}
 		r.players[pn.Name()] = pn
 
+		if !pn.AiAgent() {
+			r.humanPlayers++
+		}
+
 		if nameLen := len(pn.Name()); r.largestName < nameLen {
 			r.largestName = nameLen
 		}
@@ -52,11 +58,17 @@ func (r *results) addPlayer(player Player) {
  *
  * @param player Player who is banking
  * @param pts Points they accrued from the round
+ *
+ * @return True if all human players have banked, otherwise False
  */
-func (r *results) playerBanks(player Player, pts uint) {
+func (r *results) playerBanks(player Player, pts uint) bool {
 	pn := r.players[player.Name()]
 	pn.pts += pts
 	pn.banked = true
+
+	if !pn.AiAgent() {
+		r.bankedHumanPlayers++
+	}
 
 	playerAhead := pn.ahead
 	for playerAhead != nil && playerAhead.pts < pn.pts {
@@ -83,6 +95,8 @@ func (r *results) playerBanks(player Player, pts uint) {
 			playerAhead.behind.ahead = pn
 		}
 	}
+
+	return r.humanPlayers == r.bankedHumanPlayers
 }
 
 /**
@@ -100,6 +114,7 @@ func (r *results) playerBanked(player Player) bool {
  * Unmarks all players as banked
  */
 func (r *results) unbankAllPlayers() {
+	r.bankedHumanPlayers = 0
 	player := r.firstPlayer
 
 	for player != nil {
@@ -116,8 +131,7 @@ func (r *results) unbankAllPlayers() {
 func (r *results) getUnbankedPlayers() []Player {
 	unbankedPlayers := make([]Player, 0)
 
-	player := r.firstPlayer
-	for player != nil {
+	for player := r.firstPlayer; player != nil; player = player.behind {
 		if !player.banked {
 			unbankedPlayers = append(unbankedPlayers, player)
 		}
@@ -148,10 +162,12 @@ func (r *results) String() string {
 
 	// Setup Headers
 	playerHdr := "Players"
+	aiAgentHdr := "AI Agent"
 	bankedHdr := "Banked"
 	pointsHdr := "Points"
 
 	t.CreateColumn(playerHdr, table.LEFT, 0)
+	t.CreateColumn(aiAgentHdr, table.CENTER, 0)
 	t.CreateColumn(bankedHdr, table.CENTER, 0)
 	t.CreateColumn(pointsHdr, table.LEFT, 0)
 
@@ -162,7 +178,11 @@ func (r *results) String() string {
 		}
 
 		if player.banked {
-			data[bankedHdr] = '\u2714' // ✔
+			data[bankedHdr] = "✔"
+		}
+
+		if player.AiAgent() {
+			data[aiAgentHdr] = "✔"
 		}
 
 		t.AddEntry(data)

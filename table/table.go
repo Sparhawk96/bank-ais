@@ -27,7 +27,7 @@ const (
 )
 
 type Table struct {
-	columns       map[string]column
+	columns       map[string]*column
 	columnOrder   []string
 	VerticalDiv   rune
 	HorizontalDiv rune
@@ -56,7 +56,7 @@ type column struct {
  */
 func (t *Table) CreateColumn(name string, alignment Alignment, missingVal rune) error {
 	if t.columns == nil {
-		t.columns = make(map[string]column)
+		t.columns = make(map[string]*column)
 		t.columnOrder = make([]string, 0)
 	}
 
@@ -64,7 +64,7 @@ func (t *Table) CreateColumn(name string, alignment Alignment, missingVal rune) 
 		return fmt.Errorf("column with name '%s' already exists", name)
 	}
 
-	col := column{
+	col := &column{
 		header:       name,
 		alignment:    alignment,
 		missingVal:   missingVal,

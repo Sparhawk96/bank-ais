@@ -139,6 +139,7 @@ func (g *Game) startRound() {
 	fmt.Printf("\n\r### Starting Round %d of 20 ###\n\r", g.currentRound+1)
 
 	dice, keepRolling := g.roll(&round)
+	bankedRound := false
 	for keepRolling {
 		fmt.Println()
 		fmt.Println(dice)
@@ -153,7 +154,7 @@ func (g *Game) startRound() {
 			case PLAYERS_BANK:
 				bankingPlayers := getBankingPlayers(g.results.getUnbankedPlayers())
 				for _, player := range bankingPlayers {
-					g.results.playerBanks(g.players[player], round.points)
+					keepPrompting = !g.results.playerBanks(g.players[player], round.points)
 				}
 
 				// This allows the agents and humans to have the
@@ -166,10 +167,22 @@ func (g *Game) startRound() {
 				keepPrompting = false
 			}
 		}
-		dice, keepRolling = g.roll(&round)
+
+		// Round is over when all players bank or a 7 is rolled
+		if len(g.results.getUnbankedPlayers()) == 0 {
+			keepRolling = false
+			bankedRound = true
+		} else {
+			dice, keepRolling = g.roll(&round)
+		}
 	}
-	fmt.Println()
-	fmt.Println(dice)
+
+	if !bankedRound {
+		fmt.Println()
+		fmt.Println(dice)
+		fmt.Printf("Roll Number: %d\n\r", len(round.rolls))
+	}
+	fmt.Printf("Round %d done!\n\r\n\r", g.currentRound+1)
 }
 
 /**

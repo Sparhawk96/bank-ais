@@ -128,8 +128,14 @@ func getBankingPlayers(players []Player) []string {
 		} else {
 			fmt.Printf("Invalid Player Name or Number: %s\n\r", input)
 		}
+
+		if len(playerMap) == len(playersBanking) {
+			keepPrompting = false
+			fmt.Println("All human players have banked.")
+		}
 	}
 
+	fmt.Println()
 	return playersBanking
 }
 
